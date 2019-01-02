@@ -16,5 +16,8 @@
         <input id="aircraft" name="aircraft" type="text"/>
         <input type="submit"/>
     </form>
+    {% for flight in myFlight %}
+    <li>{{ flight.flightNumber }} + {{ flight.start }} + {{ flight.end }} + {{ flight.date }} + {{ flight.aircraft }} </li>
+    {% endfor %}
 </body>
 </html>
