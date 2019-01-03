@@ -10,7 +10,7 @@ import datetime
 app = Flask(__name__)
 app.config['DEBUG'] = True
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:test@localhost/TestFlask'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgresqldbuser:Flight1!@flight-customer-postgresqldbserver/postgresqldatabase12597'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgresqldbuser@flight-customer-postgresqldbserver:Flight1!@flight-customer-postgresqldbserver.postgres.database.azure.com/postgresqldatabase12597'
 
 # Create database connection object
 db = SQLAlchemy(app)
