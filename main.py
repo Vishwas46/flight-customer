@@ -86,9 +86,7 @@ def auth_required_customer(f):
 @app.route('/')
 @auth_required_flight
 def index():
-    for u in Flight.query.all():
-        print(u.__dict__)
-    return render_template('addFlight.html')
+    return 'home page'
 
 @app.route('/v1/flight', methods=['POST'])
 @auth_required_flight
