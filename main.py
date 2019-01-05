@@ -85,7 +85,7 @@ def auth_required_customer(f):
 # @app.route mapps url to a python function
 # index method gets all data from the database and displays it on the terminal. It also adds a flight to the database. 
 @app.route('/')
-@auth_required_flight
+#@auth_required_flight
 def index():
     return 'home page'
 
