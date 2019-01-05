@@ -58,7 +58,7 @@ class Customer(db.Model):
 
     def __repr__(self):
         return '<seat %r>' % self.seat
-
+'''
 # BasicAuth
 def auth_required_flight(f):
     @wraps(f)
@@ -81,7 +81,7 @@ def auth_required_customer(f):
         return make_response('Could not verify your login!', 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
 
     return decorated
-
+'''
 # @app.route mapps url to a python function
 # index method gets all data from the database and displays it on the terminal. It also adds a flight to the database. 
 @app.route('/')
@@ -90,7 +90,7 @@ def index():
     return 'home page'
 
 @app.route('/v1/flight', methods=['POST'])
-@auth_required_flight
+#@auth_required_flight
 def postFlight():
     content = request.get_json()
     flightNum = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
@@ -101,7 +101,7 @@ def postFlight():
     return 'Flight Posted'
 
 @app.route('/v1/flights', methods=['GET'])
-@auth_required_flight
+#@auth_required_flight
 def get_all_flights():
     flights = Flight.query.all()
     for flight in flights:
@@ -109,7 +109,7 @@ def get_all_flights():
     return 'all flights are shown in the terminal' 
 
 @app.route('/v1/flight/<flight_number>', methods=['GET'])
-@auth_required_flight
+#@auth_required_flight
 def get_flight(flight_number):
     flight = Flight.query.filter_by(flightNumber=flight_number).first()
     print(flight.__dict__)
@@ -117,7 +117,7 @@ def get_flight(flight_number):
 
 
 @app.route('/v1/flight/<flight_number>', methods=['DELETE'])
-@auth_required_flight
+#@auth_required_flight
 def del_flight(flight_number):
     flight = Flight.query.filter_by(flightNumber=flight_number).first()
     db.session.delete(flight)
@@ -136,7 +136,7 @@ def bookFlight():
     return 'flight booked'
 
 @app.route('/v1/ticket/<ticket_number>', methods=['GET'])
-@auth_required_customer
+#@auth_required_customer
 def getFlight(ticket_number):
     customer = Customer.query.filter_by(ticketNumber=ticket_number).first()
     #return jsonify(customer)
@@ -144,7 +144,7 @@ def getFlight(ticket_number):
     return 'ticket details shown'
 
 @app.route('/v1/ticket/<ticket_number>', methods=['DELETE'])
-@auth_required_customer
+#@auth_required_customer
 def del_ticket(ticket_number):
     ticket = Customer.query.filter_by(ticketNumber=ticket_number).first()
     db.session.delete(ticket)
@@ -165,7 +165,7 @@ def sel_seat():
     return 'seat booked'
 
 @app.route('/v1/seat/<seat>', methods=['DELETE'])
-@auth_required_customer
+#@auth_required_customer
 def del_seat(seat):
     tickNum, seatNum = seat.split("-")
     delSeat = Customer.query.filter_by(ticketNumber=tickNum).first()
@@ -177,7 +177,7 @@ def del_seat(seat):
     return "seat deleted"
 
 @app.route('/v1/checkin', methods=['POST'])
-@auth_required_customer
+#@auth_required_customer
 def checkin():
     label = "ABCDEFGH"
     row = range(1,10)
@@ -194,7 +194,7 @@ def checkin():
     return 'checked in'
 
 @app.route('/v1/ticket/<ticknum>/notifications', methods=['GET'])
-@auth_required_customer
+#@auth_required_customer
 def notify(ticknum):
     cust = Customer.query.filter_by(ticketNumber=ticknum).first()
     if(cust.status == 1):
