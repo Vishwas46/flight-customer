@@ -4,7 +4,7 @@ from flask_marshmallow import Marshmallow
 from functools import wraps 
 from pprint import pprint as pp
 import string, random
-import datetime
+from datetime import datetime
 
 
 # Create app
@@ -96,7 +96,7 @@ def auth_required_customer(f):
 # @app.route mapps url to a python function
 # index method gets all data from the database and displays it on the terminal. It also adds a flight to the database. 
 @app.route('/')
-#@auth_required_flight
+@auth_required_flight
 def index():
     return 'home page'
 
@@ -108,8 +108,7 @@ def postFlight():
     flight = Flight(flightNum, content['start'], content['end'], content['departure'], content['aircraft'])
     db.session.add(flight)
     db.session.commit()
-    print('Location: /v1/flight/'+flightNum)
-    return 'Flight Posted'
+    return 'Location: /v1/flight/'+flightNum
 
 @app.route('/v1/flights', methods=['GET'])
 @auth_required_flight
@@ -117,7 +116,7 @@ def get_all_flights():
     results = Flight.query.all()
     flight_schema = FlightSchema(many=True)
     output = flight_schema.dump(results).data
-    return jsonify({'flight': output})
+    return jsonify({'': output})
 
 @app.route('/v1/flight/<flight_number>', methods=['GET'])
 @auth_required_flight
@@ -149,7 +148,7 @@ def bookFlight():
 @app.route('/v1/ticket/<ticket_number>', methods=['GET'])
 @auth_required_customer
 def getFlight(ticket_number):
-    customer = Customer.query.filter_by(ticketNumber=ticket_number).first()
+    customer = Customer.query.filter_by(ticketNumber=ticket_number).first_or_404()
     customer_schema = CustomerSchema()
     output = customer_schema.dump(customer).data
     return jsonify({'': output})
@@ -172,8 +171,7 @@ def sel_seat():
     cust.seat = content['Seat-label '] + content['Seat-row']
     cust.status = 2
     db.session.commit()
-    print('Location: /v1/seat/' + content['ticket-number'] + '-' + cust.seat )
-    return 'seat booked'
+    return 'Location: /v1/seat/' + content['ticket-number'] + '-' + cust.seat
 
 @app.route('/v1/seat/<seat>', methods=['DELETE'])
 @auth_required_customer
@@ -207,21 +205,33 @@ def checkin():
 @app.route('/v1/ticket/<ticknum>/notifications', methods=['GET'])
 @auth_required_customer
 def notify(ticknum):
-    cust = Customer.query.filter_by(ticketNumber=ticknum).first()
+    cust = Customer.query.filter_by(ticketNumber=ticknum).first_or_404()
     if(cust.status == 1):
-        print('title: Booking Successful')
-        print("message: Your ticket booking", ticknum, "is successful")
-        print('timestamp:', datetime.datetime.now())
+        dt = datetime.now()
+        return 'title: Booking Successful\n' + 'message: Your ticket booking ' + ticknum + ' is successful.\n' + 'timestamp: ' + str(dt)
+        
     elif(cust.status == 2):
-        print('title: Seat Booking')
-        print('seat', cust.seat, 'is booked for your ticket', ticknum)
-        print('timestamp:', datetime.datetime.now())
+        dt = datetime.now()
+        return 'title: Seat Booking\n' + 'seat ' + cust.seat + ' is booked for your ticket ' + ticknum + '\n' + 'timestamp: ' + str(dt)
     else:
-        print('none')
+        return 'none'
 
-    
-    return 'notified'
+@app.errorhandler(404)
+def page_not_found(e):
+    # note that we set the 404 status explicitly
+    return 'please check the input'
 
+@app.errorhandler(403)
+def forbidden(e):
+    return 'you do not have the permissions'
+
+@app.errorhandler(405)
+def forbidden(e):
+    return 'Please check the method name'
+
+@app.errorhandler(500)
+def serverError(e):
+    return 'internal server error'
 
 if __name__ == '__main__':
 	app.run()
