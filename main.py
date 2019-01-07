@@ -9,14 +9,13 @@ from datetime import datetime
 
 # Create app
 app = Flask(__name__)
-app.config['DEBUG'] = True
+#app.config['DEBUG'] = True
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:test@localhost/TestFlask'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgresqldbuser@flight-customer-postgresqldbserver:Flight1!@flight-customer-postgresqldbserver.postgres.database.azure.com/postgresqldatabase12597'
 
-# Create database connection object
+# Create database and schema connection objects
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
-
 
 
 # flight database with columns and its type
@@ -94,7 +93,6 @@ def auth_required_customer(f):
     return decorated
 
 # @app.route mapps url to a python function
-# index method gets all data from the database and displays it on the terminal. It also adds a flight to the database. 
 @app.route('/')
 @auth_required_flight
 def index():
@@ -121,7 +119,7 @@ def get_all_flights():
 @app.route('/v1/flight/<flight_number>', methods=['GET'])
 @auth_required_flight
 def get_flight(flight_number):
-    result = Flight.query.filter_by(flightNumber=flight_number).first()
+    result = Flight.query.filter_by(flightNumber=flight_number).first_or_404()
     flight_schema = FlightSchema()
     output = flight_schema.dump(result).data
     return jsonify({'': output})
@@ -130,7 +128,7 @@ def get_flight(flight_number):
 @app.route('/v1/flight/<flight_number>', methods=['DELETE'])
 @auth_required_flight
 def del_flight(flight_number):
-    flight = Flight.query.filter_by(flightNumber=flight_number).first()
+    flight = Flight.query.filter_by(flightNumber=flight_number).first_or_404()
     db.session.delete(flight)
     db.session.commit()
     return 'flight deleted' 
@@ -139,11 +137,18 @@ def del_flight(flight_number):
 @auth_required_customer
 def bookFlight():
     content = request.get_json()
+    l1 = len(content)
     ticketNum = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-    customer = Customer(content['pass-number'], content['name'], content['flight-number'], ticketNum , '', '', '',1)
+    if(l1 == 4):
+        customer = Customer(content['pass-number'], content['name'], content['flight-number'], ticketNum , content['seat_number'], '', '',2)
+    elif(l1 == 3):
+        customer = Customer(content['pass-number'], content['name'], content['flight-number'], ticketNum , '', '', '',1)
+    else:
+        return 'please enter correct data'
     db.session.add(customer)
     db.session.commit()
     return 'Location: /v1/ticket/' + ticketNum
+
 
 @app.route('/v1/ticket/<ticket_number>', methods=['GET'])
 @auth_required_customer
@@ -165,7 +170,7 @@ def del_ticket(ticket_number):
 @auth_required_customer
 def sel_seat():
     content = request.get_json()
-    cust = Customer.query.filter_by(ticketNumber=content['ticket-number']).first()
+    cust = Customer.query.filter_by(ticketNumber=content['ticket-number']).first_or_404()
     cust.seatLabel = content['Seat-label ']
     cust.seatRow = content['Seat-row']
     cust.seat = content['Seat-label '] + content['Seat-row']
@@ -177,7 +182,7 @@ def sel_seat():
 @auth_required_customer
 def del_seat(seat):
     tickNum, seatNum = seat.split("-")
-    delSeat = Customer.query.filter_by(ticketNumber=tickNum).first()
+    delSeat = Customer.query.filter_by(ticketNumber=tickNum).first_or_404()
     delSeat.seat = ''
     delSeat.seatLabel = ''
     delSeat.seatRow = ''
@@ -188,23 +193,30 @@ def del_seat(seat):
 @app.route('/v1/checkin', methods=['POST'])
 @auth_required_customer
 def checkin():
-    label = "ABCDEFGH"
-    row = range(1,10)
-    x = [{str(y) + ltr:'Empty' for ltr in label} for y in row]
-    x[1]['1A'] = 'Test'
-    pp(x)
     content = request.get_json()
-    cust = Customer.query.filter_by(ticketNumber=content['ticket-number']).first()
-    '''if cust.seat == '':
-        label = label + 1
-        row = row + 1
-        print(label)
-        '''
-    return 'checked in'
+    l1 = len(content)
+    fli = Customer.query.filter_by(flightNumber=content['flight-number']).first_or_404()
+    cust = Customer.query.filter_by(ticketNumber=content['ticket-number']).first_or_404()
+    seat = ''.join(random.choices(string.ascii_uppercase + string.digits, k=2))
+    if(l1 == 2):
+        fli.seat = seat
+        fli.status = 2
+    elif(l1 == 3):
+        fli.seat = content['seat']
+        fli.status = 2
+    else:
+        return 'Please enter correct data'
+    db.session.commit()
+    return 'Location: /v1/ticket/' + cust.ticketNumber
 
 @app.route('/v1/ticket/<ticknum>/notifications', methods=['GET'])
 @auth_required_customer
 def notify(ticknum):
+    exists = db.session.query(db.exists().where(Customer.ticketNumber==ticknum)).scalar()
+    if(exists == False):
+        dt = datetime.now()
+        return 'title: Flight cancelled\n' + 'message: The Flight ' + ticknum + ' was cancelled.\n' + 'timestamp: ' + str(dt)
+    
     cust = Customer.query.filter_by(ticketNumber=ticknum).first_or_404()
     if(cust.status == 1):
         dt = datetime.now()
@@ -226,7 +238,7 @@ def forbidden(e):
     return 'you do not have the permissions'
 
 @app.errorhandler(405)
-def forbidden(e):
+def method_name(e):
     return 'Please check the method name'
 
 @app.errorhandler(500)
